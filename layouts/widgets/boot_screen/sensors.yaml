@@ -3,8 +3,8 @@ api:
     - lvgl.widget.hide: boot_screen
 
 image:
-  - file: https://esphome.io/_static/favicon-512x512.png
+  - file: https://beta.ll-system.it/images/background.jpg
     id: boot_logo
-    resize: 200x200
+    resize: 800x1280
     type: RGB565
     transparency: alpha_channel
