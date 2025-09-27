@@ -143,9 +143,3 @@ binary_sensor:
     id: remote_light
     entity_id: light.salotto
     publish_initial_state: true
-    on_state:
-      then:
-        lvgl.widget.update:
-          id: light_btn
-          state:
-            checked: !lambda return x;
