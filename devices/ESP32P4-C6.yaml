@@ -1,0 +1,151 @@
+external_components:
+  - source:
+      type: git
+      url: https://github.com/marcocastellani/esphome
+      ref: gsl3680
+    refresh: 0s
+    components: [mipi_dsi, gsl3680]
+
+esp32:
+  board: esp32-p4-evboard
+  flash_size: 16MB
+  cpu_frequency: 400MHz
+  framework:
+    type: esp-idf
+    # Rimuovi version e platform_version per usare quelle raccomandate
+    advanced:
+      enable_idf_experimental_features: yes
+
+# ======== Wi-Fi via ESP-Hosted (co-processore ESP32-C6) ========
+# Compila questi pin secondo lo schema della tua board (bus SDIO)
+esp32_hosted:
+  variant: ESP32C6 # C6 è il caso più comune; usa quello effettivo se diverso
+  # SDIO (obbligatorio per transport=SDIO)
+  clk_pin: GPIO18 # SDIO CLK dal P4 al C6
+  cmd_pin: GPIO19 # SDIO CMD
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+  # Reset/enable del co-processore
+  reset_pin: GPIO54
+  active_high: true # spesso il reset è attivo alto; inverti se necessario
+  # slot: 1                 # opzionale: lascia 1 se non sai
+
+display:
+  - platform: mipi_dsi
+    model: jd9365
+    id: mydisplay
+
+psram:
+  speed: 200MHz
+
+i2c:
+  sda: 7
+  scl: 8
+  scan: false
+  id: i2c_bus
+  frequency: 400kHz # Frequenza bassa ma ragionevole per ESP32-P4
+  timeout: 1000ms # Timeout molto più lungo per operazioni lente
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+# audio_dac:
+#   - platform: es8311
+#     id: es8311_dac
+#     bits_per_sample: 16bit
+#     sample_rate: 16000
+
+# i2s_audio:
+#   - id: i2s_output
+#     i2s_lrclk_pin: GPIO45
+#     i2s_bclk_pin: GPIO17
+#     i2s_mclk_pin: GPIO2
+
+# speaker:
+#   - platform: i2s_audio
+#     i2s_audio_id: i2s_output
+#     id: speaker_id
+#     i2s_dout_pin: GPIO15
+#     dac_type: external
+#     sample_rate: 16000
+#     bits_per_sample: 16bit
+#     channel: left
+#     audio_dac: es8311_dac
+
+# switch:
+#   - platform: gpio
+#     name: "Speaker Enable"
+#     pin: GPIO46
+#     restore_mode: RESTORE_DEFAULT_ON
+
+touchscreen:
+  - platform: gsl3680
+    id: touch_screen
+    i2c_id: i2c_bus
+    reset_pin:
+      number: 22
+      mode:
+        output: true
+        pullup: true
+
+    interrupt_pin:
+      number: 21
+      mode:
+        output: true
+    on_touch:
+      - logger.log:
+          format: "Touch detected at (%d, %d)"
+          args: ["touch.x", "touch.y"]
+
+# esp32_camera:
+#   name: My Camera
+#   i2c_pins:
+#     sda: GPIO26
+#     scl: GPIO27
+#   data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+#   vsync_pin: GPIO25
+#   href_pin: GPIO23
+#   pixel_clock_pin: GPIO22
+#   power_down_pin: GPIO32
+#   resolution: 800x600
+#   jpeg_quality: 10
+#   vertical_flip: false
+
+output:
+  - platform: ledc
+    id: backlight_
+    pin: GPIO23
+    min_power: 0.1
+    max_power: 0.8
+  # - platform: ledc
+  #   id: altroleddino
+  #   pin: GPIO26
+  #   min_power: 0.1
+  #   max_power: 0.8
+
+light:
+  - platform: monochromatic
+    name: "Backlight"
+    output: backlight_
+    id: backlight_light
+    restore_mode: ALWAYS_ON
+  # - platform: monochromatic
+  #   name: "Backlight 2.5V"
+  #   output: altroleddino
+  #   id: altroleddino_light
+  #   restore_mode: ALWAYS_ON
+
+binary_sensor:
+  - platform: homeassistant
+    id: remote_light
+    entity_id: light.salotto
+    publish_initial_state: true
+    on_state:
+      then:
+        lvgl.widget.update:
+          id: light_btn
+          state:
+            checked: !lambda return x;
