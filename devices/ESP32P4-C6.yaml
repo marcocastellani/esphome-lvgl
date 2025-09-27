@@ -6,16 +6,6 @@ external_components:
     refresh: 0s
     components: [mipi_dsi, gsl3680]
 
-esp32:
-  board: esp32-p4-evboard
-  flash_size: 16MB
-  cpu_frequency: 400MHz
-  framework:
-    type: esp-idf
-    # Rimuovi version e platform_version per usare quelle raccomandate
-    advanced:
-      enable_idf_experimental_features: yes
-
 # ======== Wi-Fi via ESP-Hosted (co-processore ESP32-C6) ========
 # Compila questi pin secondo lo schema della tua board (bus SDIO)
 esp32_hosted:
